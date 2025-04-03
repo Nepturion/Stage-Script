@@ -1,0 +1,33 @@
+﻿# Variables (assurez-vous de définir ces variables avant d'exécuter le script)
+$taskName = "Xerox MAJ Color Pref Printer"
+$scriptDestination = "C:\Script_MAJ_COLOR_PREF_PRINTERS.ps1" # Chemin du script à exécuter
+
+Write-Output "Début du Task Planner."
+
+# TASK PLANNER
+
+# Vérifier si la tâche planifiée existe déjà
+$task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+
+if ($task) {
+    Write-Output "La tâche planifiée '$taskName' existe déjà."
+} else {
+    Write-Output "La tâche planifiée '$taskName' n'existe pas. Création de la tâche..."
+
+    # Définir les paramètres de la tâche
+    $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -File `"$scriptDestination`""
+    $trigger = New-ScheduledTaskTrigger -Daily -At "9:30AM"
+    $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Highest
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+
+    # Créer la tâche planifiée
+    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings
+
+    if (Get-ScheduledTask -TaskName $taskName) {
+        Write-Output "Tâche planifiée créée avec succès pour exécuter le script à 9h30 tous les jours."
+        Exit 0
+    } else {
+        Write-Output "Échec de la création de tâche planifiée."
+        Exit 1
+    }
+}
